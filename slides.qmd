@@ -1,0 +1,82 @@
+---
+title: "A toy GBM workflow"
+subtitle: "From synthetic returns to simulated paths"
+format:
+  revealjs:
+    slide-number: true
+    theme: simple
+---
+
+## The question
+
+How can a short, reproducible Python analysis become a shareable web report?
+
+- Make a deterministic toy price history.
+- Estimate parameters from its returns.
+- Simulate and compare paths.
+- Render the same story with Quarto.
+
+## The data
+
+```{python}
+import sys
+sys.path.insert(0, "src")
+
+import matplotlib.pyplot as plt
+from market_demo import generate_prices, log_returns, estimate_parameters, simulate_gbm
+
+prices = generate_prices()
+returns = log_returns(prices)
+fig, ax = plt.subplots(figsize=(8, 4))
+ax.plot(prices.index, prices, color="#2878B5")
+ax.set(title="Five years of synthetic daily prices", xlabel="Date", ylabel="Price")
+ax.grid(alpha=0.25)
+fig.tight_layout()
+plt.show()
+```
+
+## The calibration
+
+```{python}
+estimates = estimate_parameters(returns)
+print(f"Observations: {len(returns):,}")
+print(f"Annualized drift: {estimates['drift']:.1%}")
+print(f"Annualized volatility: {estimates['volatility']:.1%}")
+```
+
+Daily log-return volatility is annualized with \(\sqrt{252}\).
+
+## The comparison
+
+```{python}
+paths = simulate_gbm(
+    initial_price=float(prices.iloc[0]),
+    n_days=len(returns),
+    drift=estimates["drift"],
+    volatility=estimates["volatility"],
+)
+fig, ax = plt.subplots(figsize=(8, 4))
+ax.plot(range(len(prices)), prices.to_numpy(), color="#2878B5", label="Synthetic history")
+ax.plot(paths.index, paths.median(axis=1), color="#E15759", label="Simulated median")
+ax.fill_between(
+    paths.index,
+    paths.quantile(0.05, axis=1),
+    paths.quantile(0.95, axis=1),
+    color="#F28E2B",
+    alpha=0.2,
+    label="Simulated 5th–95th percentile",
+)
+ax.set(title="One path versus calibrated simulations", xlabel="Trading day", ylabel="Price")
+ax.legend(frameon=False)
+ax.grid(alpha=0.25)
+fig.tight_layout()
+plt.show()
+```
+
+## What Quarto adds
+
+- One source format can produce a website, a dashboard, and slides.
+- Code and results stay together and are re-executed on render.
+- The same analysis functions can also be imported by a Jupyter notebook.
+
+This is a teaching example with synthetic data, not an investment model.

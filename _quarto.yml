@@ -1,0 +1,35 @@
+project:
+  type: website
+  execute-dir: project
+  output-dir: _site
+
+website:
+  title: "A tiny quant project"
+  description: "A reproducible GBM and volatility demo built with Quarto"
+  navbar:
+    left:
+      - href: index.qmd
+        text: Home
+      - href: analysis.qmd
+        text: Analysis
+      - href: dashboard.qmd
+        text: Dashboard
+      - href: slides.qmd
+        text: Slides
+      - href: notebooks/market_walkthrough.html
+        text: Notebook
+  page-footer:
+    center: "Synthetic data for teaching purposes"
+
+format:
+  html:
+    theme: cosmo
+    toc: true
+    code-fold: true
+
+jupyter: python3
+
+execute:
+  enabled: true
+  warning: false
+  message: false

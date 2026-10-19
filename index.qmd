@@ -1,0 +1,22 @@
+---
+title: "A tiny quantitative-finance project"
+subtitle: "One synthetic price series, four Quarto deliverables"
+---
+
+This project is a small end-to-end example of a quantitative workflow:
+
+- generate a reproducible price history;
+- calculate and visualize log returns;
+- estimate annualized volatility and drift;
+- simulate new paths with a geometric Brownian motion (GBM); and
+- compare the simulated paths with the synthetic history.
+
+## Pick a view
+
+- [Read the step-by-step analysis](analysis.qmd)
+- [Open the dashboard](dashboard.qmd)
+- [View the short slide deck](slides.qmd)
+- [Open the executed notebook](notebooks/market_walkthrough.html)
+
+All prices are generated locally from a fixed random seed. Nothing is fetched
+from the internet, and the results are for demonstration only.

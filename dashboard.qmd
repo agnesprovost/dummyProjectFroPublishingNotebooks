@@ -1,0 +1,94 @@
+---
+title: "Toy market dashboard"
+format: dashboard
+---
+
+```{python}
+#| include: false
+import sys
+sys.path.insert(0, "src")
+
+import matplotlib.pyplot as plt
+from market_demo import generate_prices, log_returns, estimate_parameters, simulate_gbm
+
+prices = generate_prices()
+returns = log_returns(prices)
+estimates = estimate_parameters(returns)
+paths = simulate_gbm(
+    initial_price=float(prices.iloc[0]),
+    n_days=len(returns),
+    drift=estimates["drift"],
+    volatility=estimates["volatility"],
+)
+```
+
+## Snapshot {height=20%}
+
+```{python}
+#| content: valuebox
+#| title: "Latest synthetic price"
+#| color: primary
+{"value": f"{prices.iloc[-1]:.2f}", "caption": "toy price units"}
+```
+
+```{python}
+#| content: valuebox
+#| title: "Annualized volatility"
+#| color: info
+{"value": f"{estimates['volatility']:.1%}", "caption": "estimated from daily log returns"}
+```
+
+```{python}
+#| content: valuebox
+#| title: "Return observations"
+#| color: success
+{"value": f"{len(returns):,}", "caption": "daily synthetic returns"}
+```
+
+## Prices and returns {height=40%}
+
+### Price history
+
+```{python}
+fig, ax = plt.subplots(figsize=(9, 4))
+ax.plot(prices.index, prices, color="#2878B5", linewidth=1.2, label="Synthetic history")
+ax.set(title="Synthetic closing price", xlabel="Date", ylabel="Price")
+ax.grid(alpha=0.25)
+ax.legend(frameon=False)
+fig.tight_layout()
+plt.show()
+```
+
+### Return distribution
+
+```{python}
+fig, ax = plt.subplots(figsize=(9, 4))
+ax.hist(returns, bins=40, density=True, color="#59A14F", alpha=0.8)
+ax.set(title="Daily log-return distribution", xlabel="Daily log return", ylabel="Density")
+ax.grid(alpha=0.2)
+fig.tight_layout()
+plt.show()
+```
+
+## Calibrated simulation {height=40%}
+
+```{python}
+median = paths.median(axis=1)
+lower = paths.quantile(0.05, axis=1)
+upper = paths.quantile(0.95, axis=1)
+
+fig, ax = plt.subplots(figsize=(9, 4))
+ax.fill_between(paths.index, lower, upper, color="#F28E2B", alpha=0.22, label="Simulated 5th–95th percentile")
+ax.plot(paths.index, median, color="#E15759", label="Simulated median")
+ax.plot(range(len(prices)), prices.to_numpy(), color="#2878B5", linewidth=1.2, label="Synthetic history")
+ax.set(title="History compared with calibrated GBM", xlabel="Trading day", ylabel="Price")
+ax.legend(frameon=False)
+ax.grid(alpha=0.25)
+fig.tight_layout()
+plt.show()
+```
+
+### Interpretation
+
+This dashboard is a compact view of the same reproducible example used in the
+[narrative report](analysis.qmd). The data are synthetic and are not a forecast.

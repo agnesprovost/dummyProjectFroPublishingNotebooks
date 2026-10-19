@@ -1,0 +1,87 @@
+"""Small, reusable functions for a synthetic GBM and volatility demo."""
+
+from __future__ import annotations
+
+import numpy as np
+import pandas as pd
+
+TRADING_DAYS = 252
+
+
+def generate_prices(
+    n_days: int = 1260,
+    initial_price: float = 100.0,
+    drift: float = 0.07,
+    volatility: float = 0.22,
+    seed: int = 42,
+) -> pd.Series:
+    """Generate a reproducible daily GBM price series, including day zero."""
+    if n_days < 1:
+        raise ValueError("n_days must be at least 1")
+    if not np.isfinite(initial_price) or initial_price <= 0:
+        raise ValueError("initial_price must be finite and positive")
+    if not np.isfinite(drift):
+        raise ValueError("drift must be finite")
+    if not np.isfinite(volatility) or volatility < 0:
+        raise ValueError("volatility must be finite and non-negative")
+
+    rng = np.random.default_rng(seed)
+    dt = 1.0 / TRADING_DAYS
+    shocks = rng.standard_normal(n_days)
+    increments = (drift - 0.5 * volatility**2) * dt + volatility * np.sqrt(dt) * shocks
+    values = initial_price * np.exp(np.concatenate(([0.0], np.cumsum(increments))))
+    dates = pd.bdate_range("2020-01-01", periods=n_days + 1, name="Date")
+    return pd.Series(values, index=dates, name="Close")
+
+
+def log_returns(prices: pd.Series) -> pd.Series:
+    """Calculate consecutive log returns for a positive price series."""
+    if prices.empty or not np.isfinite(prices.to_numpy()).all() or (prices <= 0).any():
+        raise ValueError("prices must be non-empty, finite, and strictly positive")
+    returns = np.log(prices).diff().dropna()
+    returns.name = "Daily log return"
+    return returns
+
+
+def estimate_parameters(returns: pd.Series) -> dict[str, float]:
+    """Estimate annualized GBM drift and volatility from daily log returns."""
+    clean_returns = returns.dropna()
+    if len(clean_returns) < 2 or not np.isfinite(clean_returns).all():
+        raise ValueError("at least two finite returns are required")
+
+    daily_variance = float(clean_returns.var(ddof=1))
+    return {
+        "drift": float(clean_returns.mean() * TRADING_DAYS + 0.5 * daily_variance * TRADING_DAYS),
+        "volatility": float(np.sqrt(daily_variance * TRADING_DAYS)),
+    }
+
+
+def simulate_gbm(
+    initial_price: float,
+    n_days: int,
+    drift: float,
+    volatility: float,
+    n_paths: int = 250,
+    seed: int = 7,
+) -> pd.DataFrame:
+    """Simulate daily GBM paths and return a day-by-path DataFrame."""
+    if not np.isfinite(initial_price) or initial_price <= 0:
+        raise ValueError("initial_price must be finite and positive")
+    if n_days < 1 or n_paths < 1:
+        raise ValueError("n_days and n_paths must be at least 1")
+    if not np.isfinite(drift):
+        raise ValueError("drift must be finite")
+    if not np.isfinite(volatility) or volatility < 0:
+        raise ValueError("volatility must be finite and non-negative")
+
+    rng = np.random.default_rng(seed)
+    dt = 1.0 / TRADING_DAYS
+    shocks = rng.standard_normal((n_days, n_paths))
+    increments = (drift - 0.5 * volatility**2) * dt + volatility * np.sqrt(dt) * shocks
+    log_paths = np.vstack((np.zeros(n_paths), np.cumsum(increments, axis=0)))
+    values = initial_price * np.exp(log_paths)
+    return pd.DataFrame(
+        values,
+        index=pd.RangeIndex(n_days + 1, name="Trading day"),
+        columns=[f"Path {i + 1}" for i in range(n_paths)],
+    )
