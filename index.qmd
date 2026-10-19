@@ -14,6 +14,7 @@ This project is a small end-to-end example of a quantitative workflow:
 ## Pick a view
 
 - [Read the step-by-step analysis](analysis.qmd)
+- [Explore the literate Python module](nbs/market_demo.html)
 - [Open the dashboard](dashboard.qmd)
 - [View the short slide deck](slides.qmd)
 - [Open the executed notebook](notebooks/market_walkthrough.html)

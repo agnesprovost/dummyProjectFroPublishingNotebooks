@@ -23,15 +23,21 @@ recommendation.
 ├── .github/workflows/
 │   ├── pages.yml                 # Render and publish the Quarto website
 │   └── tests.yml                 # Run the Python unit tests
-├── src/market_demo.py            # Reusable data and model functions
+├── src/
+│   ├── market_demo.py            # NBDev-exported reusable functions
+│   ├── __init__.py               # Exported library version
+│   └── _modidx.py                # Generated notebook-to-symbol index
 ├── tests/test_market_demo.py     # Small deterministic tests
+├── nbs/market_demo.ipynb         # NBDev source for the Python module
 ├── notebooks/market_walkthrough.ipynb
 ├── index.qmd                     # Website landing page
 ├── analysis.qmd                  # Reproducible narrative report
 ├── dashboard.qmd                 # Quarto dashboard
 ├── slides.qmd                    # Reveal.js presentation
 ├── _quarto.yml                   # Website, navigation, and execution settings
-└── requirements.txt
+├── pyproject.toml                # NBDev export and notebook settings
+├── requirements.txt
+└── requirements-dev.txt          # Development and notebook tooling
 ```
 
 ## Run locally
@@ -40,15 +46,24 @@ Install Python dependencies and [Quarto](https://quarto.org/docs/get-started/).
 From the project root:
 
 ```powershell
-python -m pip install -r requirements.txt
+python -m pip install -r requirements-dev.txt
+nbdev-export
+nbdev-test
 python -m unittest discover -s tests -v
-quarto render
+quarto render --no-clean
 ```
 
 The website is written to `_site/`. Open `_site/index.html` to browse the
-rendered report, dashboard, slides, and executed notebook. Render individual
-deliverables with `quarto render notebooks/market_walkthrough.ipynb --execute`,
+rendered report, dashboard, slides, and notebooks. `nbs/market_demo.ipynb` is
+the literate source for `src/market_demo.py`: mark exported code cells with
+`#| export`, then run `nbdev-export` after editing the notebook. The same
+notebook is tested by `nbdev-test` and rendered by Quarto as the **Literate
+module** website page. Render individual deliverables with
+`quarto render nbs/market_demo.ipynb`,
+`quarto render notebooks/market_walkthrough.ipynb --execute`,
 `quarto render dashboard.qmd`, or `quarto render slides.qmd`.
+The `--no-clean` flag avoids an output-rename error when rerendering the
+existing notebook on Windows; it preserves any old files in `_site/`.
 
 ## Work in VS Code
 
@@ -56,8 +71,8 @@ deliverables with `quarto render notebooks/market_walkthrough.ipynb --execute`,
    The extension provides Quarto editing and preview commands; install the
    [Quarto CLI](https://quarto.org/docs/get-started/) separately as well.
 2. Open this project folder in VS Code and select your Anaconda Python
-   interpreter. The `requirements.txt` dependencies, including Jupyter, must
-   be installed in that same environment.
+   interpreter. Install `requirements-dev.txt` in that same environment so
+   Quarto, Jupyter, and NBDev are available together.
 3. Open `analysis.qmd` and use its **Render** button, or open the Command
    Palette and run **Quarto: Preview**. Edit a sentence or parameter, save,
    and preview again to see the report update.
@@ -78,6 +93,7 @@ quarto render slides.qmd --to pptx
 3. The workflow in `.github/workflows/pages.yml` renders the site and deploys
    `_site/` on each push to `main`.
 
-The Python module is deliberately kept separate from the Quarto documents.
-That makes it easy to reuse the same analysis in another notebook/reporting
-tool later, without copying the calculations.
+The notebook in `nbs/` is the editable source for the Python module; use
+`nbdev-export` rather than editing the generated module directly. The existing
+Quarto analysis and dashboard continue to reuse that module as separate
+presentation formats.

@@ -1,5 +1,8 @@
 .quarto/
 _site/
+build/
+dist/
+*.egg-info/
 .venv/
 venv/
 __pycache__/
