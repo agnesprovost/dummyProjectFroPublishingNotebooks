@@ -1,31 +1,71 @@
 /*-- scss:defaults --*/
-$body-bg: #f5f8fc;
-$body-color: #172b3a;
-$link-color: #087f8c;
-$selection-bg: #f4a261;
-$presentation-heading-color: #075985;
-$presentation-heading-font: "Aptos", "Segoe UI", sans-serif;
-$presentation-heading-font-weight: 650;
+$body-bg: #eff1f5;
+$body-color: #4c4f69;
+$link-color: #1e66f5;
+$selection-bg: #fe640b;
+$presentation-heading-color: #1e66f5;
+$presentation-heading-font: "Aptos Display", "Segoe UI", sans-serif;
+$presentation-heading-font-weight: 700;
 $font-family-sans-serif: "Aptos", "Segoe UI", sans-serif;
 
 /*-- scss:rules --*/
 .reveal .slide {
-  font-size: 0.88em;
+  font-size: 0.84em;
 }
 
 .reveal .slide h2 {
-  border-bottom: 2px solid rgba(8, 127, 140, 0.24);
-  padding-bottom: 0.18em;
+  border-bottom: 3px solid #1e66f5;
+  padding-bottom: 0.2em;
+}
+
+.reveal .slides section {
+  text-align: left;
+}
+
+.reveal .slides #title-slide {
+  text-align: left;
+}
+
+.reveal .slides #title-slide h1 {
+  max-width: 12em;
+  color: #4c4f69;
+  font-size: 2.2em;
+  letter-spacing: -0.035em;
+  text-transform: none;
+}
+
+.reveal .slides #title-slide .subtitle {
+  color: #6c6f85;
+}
+
+.reveal .slides #title-slide::before {
+  display: block;
+  margin-bottom: 1.2rem;
+  color: #8839ef;
+  content: "QUARTO / QUANT FINANCE";
+  font-size: 0.72em;
+  font-weight: 700;
+  letter-spacing: 0.16em;
 }
 
 .reveal .controls {
-  color: #087f8c;
+  color: #1e66f5;
 }
 
 .reveal .progress {
-  color: #087f8c;
+  color: #1e66f5;
 }
 
 .reveal .slide .columns {
   align-items: center;
+}
+
+.reveal .slide .column h3 {
+  color: #8839ef;
+}
+
+.reveal .slide img {
+  border: 0;
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(76, 79, 105, 0.12);
 }

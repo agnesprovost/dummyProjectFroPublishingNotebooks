@@ -1,15 +1,18 @@
 name: Publish Quarto site
 
+# Build on main updates; allow a manual rerun from the Actions tab.
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
+# Grant the Pages deploy action only the permissions it needs.
 permissions:
   contents: read
   pages: write
   id-token: write
 
+# Cancel an outdated deployment when a newer main push arrives.
 concurrency:
   group: pages
   cancel-in-progress: true
@@ -35,9 +38,12 @@ jobs:
       - name: Install Quarto
         uses: quarto-dev/quarto-actions/setup@v2
 
+      # Render all Quarto documents, including the executed Jupyter notebook,
+      # into the project's configured output directory (_site/).
       - name: Render site
         uses: quarto-dev/quarto-actions/render@v2
 
+      # Upload the generated static files and publish them to GitHub Pages.
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 

@@ -4,7 +4,7 @@ subtitle: "A short, reproducible GBM walkthrough"
 format:
   revealjs:
     theme:
-      - sky
+      - white
       - styles/slides.scss
     slide-number: "c/t"
     show-slide-number: all
@@ -128,7 +128,7 @@ plt.show()
 
 ## What to remember
 
-- Log-return standard deviation scales with \(\sqrt{252}\) to annualize volatility.
+- Log-return standard deviation scales by `sqrt(252)` to annualize volatility.
 - The calibration window and chosen series change the estimated parameters.
 - GBM is a useful teaching model, not a realistic guarantee about future returns.
 
