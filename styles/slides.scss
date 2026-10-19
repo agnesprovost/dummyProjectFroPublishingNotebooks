@@ -1,0 +1,31 @@
+/*-- scss:defaults --*/
+$body-bg: #f5f8fc;
+$body-color: #172b3a;
+$link-color: #087f8c;
+$selection-bg: #f4a261;
+$presentation-heading-color: #075985;
+$presentation-heading-font: "Aptos", "Segoe UI", sans-serif;
+$presentation-heading-font-weight: 650;
+$font-family-sans-serif: "Aptos", "Segoe UI", sans-serif;
+
+/*-- scss:rules --*/
+.reveal .slide {
+  font-size: 0.88em;
+}
+
+.reveal .slide h2 {
+  border-bottom: 2px solid rgba(8, 127, 140, 0.24);
+  padding-bottom: 0.18em;
+}
+
+.reveal .controls {
+  color: #087f8c;
+}
+
+.reveal .progress {
+  color: #087f8c;
+}
+
+.reveal .slide .columns {
+  align-items: center;
+}

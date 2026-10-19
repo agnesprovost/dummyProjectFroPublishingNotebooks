@@ -1,94 +1,281 @@
 ---
-title: "Toy market dashboard"
+title: "A market-model sandbox"
 format: dashboard
 ---
 
-```{python}
-#| include: false
-import sys
-sys.path.insert(0, "src")
+# {.sidebar}
 
-import matplotlib.pyplot as plt
-from market_demo import generate_prices, log_returns, estimate_parameters, simulate_gbm
+Choose an asset and change the calibration window. The dashboard recalculates
+the annualized volatility and drift, then redraws the charts directly in your
+browser. No server or page reload is needed.
 
-prices = generate_prices()
-returns = log_returns(prices)
-estimates = estimate_parameters(returns)
-paths = simulate_gbm(
-    initial_price=float(prices.iloc[0]),
-    n_days=len(returns),
-    drift=estimates["drift"],
-    volatility=estimates["volatility"],
+```{ojs}
+//| output: false
+tradingDays = 252
+observationCount = 1260
+
+makeNormalGenerator = (seed) => {
+  let state = seed >>> 0;
+  let spare = null;
+  const uniform = () => {
+    state = (state + 0x6D2B79F5) >>> 0;
+    let value = state;
+    value = Math.imul(value ^ (value >>> 15), value | 1);
+    value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
+    return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
+  };
+
+  return () => {
+    if (spare !== null) {
+      const value = spare;
+      spare = null;
+      return value;
+    }
+    const radius = Math.sqrt(-2 * Math.log(uniform()));
+    const angle = 2 * Math.PI * uniform();
+    spare = radius * Math.sin(angle);
+    return radius * Math.cos(angle);
+  };
+}
+
+generatePrices = ({seed, drift, volatility}) => {
+  const normal = makeNormalGenerator(seed);
+  const dt = 1 / tradingDays;
+  let price = 100;
+  return Array.from({length: observationCount + 1}, (_, day) => {
+    if (day > 0) {
+      price *= Math.exp(
+        (drift - 0.5 * volatility ** 2) * dt
+        + volatility * Math.sqrt(dt) * normal()
+      );
+    }
+    return {day, price};
+  });
+}
+
+assets = [
+  {
+    name: "Steady",
+    description: "Lower volatility",
+    seed: 42,
+    drift: 0.07,
+    volatility: 0.18
+  },
+  {
+    name: "Volatile",
+    description: "Higher volatility",
+    seed: 2026,
+    drift: 0.04,
+    volatility: 0.34
+  }
+].map(asset => ({...asset, prices: generatePrices(asset)}))
+```
+
+```{ojs}
+viewof assetName = Inputs.select(
+  assets.map(asset => asset.name),
+  {value: assets[0].name, label: "Synthetic asset"}
+)
+
+viewof estimationWindow = Inputs.range(
+  [60, observationCount],
+  {value: 252, step: 1, label: "Calibration window (trading days)"}
+)
+
+viewof forecastHorizon = Inputs.range(
+  [63, 756],
+  {value: 252, step: 21, label: "Forecast horizon (trading days)"}
 )
 ```
 
-## Snapshot {height=20%}
+# Explore
 
-```{python}
-#| content: valuebox
-#| title: "Latest synthetic price"
-#| color: primary
-{"value": f"{prices.iloc[-1]:.2f}", "caption": "toy price units"}
+## Snapshot {height=18%}
+
+```{ojs}
+md`**Selected asset**
+### ${assetName}`
 ```
 
-```{python}
-#| content: valuebox
-#| title: "Annualized volatility"
-#| color: info
-{"value": f"{estimates['volatility']:.1%}", "caption": "estimated from daily log returns"}
+```{ojs}
+md`**Latest synthetic price**
+### ${activeAsset.prices.at(-1).price.toFixed(2)}`
 ```
 
-```{python}
-#| content: valuebox
-#| title: "Return observations"
-#| color: success
-{"value": f"{len(returns):,}", "caption": "daily synthetic returns"}
+```{ojs}
+md`**Estimated annual volatility**
+### ${(fitVolatility * 100).toFixed(1)}%`
 ```
 
-## Prices and returns {height=40%}
-
-### Price history
-
-```{python}
-fig, ax = plt.subplots(figsize=(9, 4))
-ax.plot(prices.index, prices, color="#2878B5", linewidth=1.2, label="Synthetic history")
-ax.set(title="Synthetic closing price", xlabel="Date", ylabel="Price")
-ax.grid(alpha=0.25)
-ax.legend(frameon=False)
-fig.tight_layout()
-plt.show()
+```{ojs}
+md`**Estimated annual drift**
+### ${(fitDrift * 100).toFixed(1)}%`
 ```
 
-### Return distribution
+## Price history {height=40%}
 
-```{python}
-fig, ax = plt.subplots(figsize=(9, 4))
-ax.hist(returns, bins=40, density=True, color="#59A14F", alpha=0.8)
-ax.set(title="Daily log-return distribution", xlabel="Daily log return", ylabel="Density")
-ax.grid(alpha=0.2)
-fig.tight_layout()
-plt.show()
+```{ojs}
+Plot.plot({
+  height: 300,
+  grid: true,
+  x: {label: "Trading day"},
+  y: {label: "Synthetic price"},
+  marks: [
+    Plot.line(activeAsset.prices, {
+      x: "day",
+      y: "price",
+      stroke: "#a6b2c2",
+      strokeWidth: 1.2
+    }),
+    Plot.line(calibrationPrices, {
+      x: "day",
+      y: "price",
+      stroke: "#087f8c",
+      strokeWidth: 2.5
+    }),
+    Plot.ruleX([observationCount - estimationWindow], {
+      stroke: "#d97706",
+      strokeDasharray: "5,4"
+    })
+  ]
+})
 ```
 
-## Calibrated simulation {height=40%}
+## Returns and simulation {height=42%}
 
-```{python}
-median = paths.median(axis=1)
-lower = paths.quantile(0.05, axis=1)
-upper = paths.quantile(0.95, axis=1)
+### Calibration returns
 
-fig, ax = plt.subplots(figsize=(9, 4))
-ax.fill_between(paths.index, lower, upper, color="#F28E2B", alpha=0.22, label="Simulated 5th–95th percentile")
-ax.plot(paths.index, median, color="#E15759", label="Simulated median")
-ax.plot(range(len(prices)), prices.to_numpy(), color="#2878B5", linewidth=1.2, label="Synthetic history")
-ax.set(title="History compared with calibrated GBM", xlabel="Trading day", ylabel="Price")
-ax.legend(frameon=False)
-ax.grid(alpha=0.25)
-fig.tight_layout()
-plt.show()
+```{ojs}
+Plot.plot({
+  height: 280,
+  grid: true,
+  x: {label: "Daily log return", tickFormat: ".0%"},
+  y: {label: "Trading days"},
+  marks: [
+    Plot.ruleY([0], {stroke: "#64748b"}),
+    Plot.rectY(
+      windowReturns,
+      Plot.binX(
+        {y: "count"},
+        {x: "value", thresholds: 32, fill: "#087f8c"}
+      )
+    )
+  ]
+})
 ```
 
-### Interpretation
+### Calibrated forecast
 
-This dashboard is a compact view of the same reproducible example used in the
-[narrative report](analysis.qmd). The data are synthetic and are not a forecast.
+```{ojs}
+Plot.plot({
+  height: 280,
+  grid: true,
+  x: {label: "Trading days from today"},
+  y: {label: "Synthetic price"},
+  marks: [
+    Plot.areaY(forecast, {
+      x: "day",
+      y1: "lower",
+      y2: "upper",
+      fill: "#f59e0b",
+      fillOpacity: 0.22
+    }),
+    Plot.line(forecast, {
+      x: "day",
+      y: "median",
+      stroke: "#087f8c",
+      strokeWidth: 2
+    })
+  ]
+})
+```
+
+## Model notes
+
+- Two separate seeded geometric Brownian motion (GBM) series make the asset
+  choice visible and repeatable.
+- The volatility estimate is the sample standard deviation of the selected
+  trailing log returns, annualized with \(\sqrt{252}\).
+- The shaded forecast band shows the 5th–95th percentile of 120 GBM paths,
+  using drift and volatility estimated from the selected window.
+- Changing the controls recalculates the dashboard in the browser. The
+  generated series and calibration are educational examples, not a forecast.
+
+```{ojs}
+activeAsset = assets.find(asset => asset.name === assetName)
+```
+
+```{ojs}
+windowPrices = activeAsset.prices.slice(-estimationWindow - 1)
+```
+
+```{ojs}
+windowReturns = windowPrices
+  .slice(1)
+  .map((point, index) => ({
+    day: point.day,
+    value: Math.log(point.price / windowPrices[index].price)
+  }))
+```
+
+```{ojs}
+returnMean = windowReturns.reduce((sum, item) => sum + item.value, 0) / windowReturns.length
+```
+
+```{ojs}
+returnVariance = windowReturns.reduce(
+  (sum, item) => sum + (item.value - returnMean) ** 2,
+  0
+) / (windowReturns.length - 1)
+```
+
+```{ojs}
+fitVolatility = Math.sqrt(returnVariance * tradingDays)
+```
+
+```{ojs}
+fitDrift = (returnMean + 0.5 * returnVariance) * tradingDays
+```
+
+```{ojs}
+calibrationPrices = activeAsset.prices.slice(-estimationWindow - 1)
+```
+
+```{ojs}
+quantile = (values, probability) => {
+  const ordered = [...values].sort((left, right) => left - right);
+  const index = (ordered.length - 1) * probability;
+  const lower = Math.floor(index);
+  const fraction = index - lower;
+  return ordered[lower] + fraction * (ordered[Math.min(lower + 1, ordered.length - 1)] - ordered[lower]);
+}
+```
+
+```{ojs}
+forecast = (() => {
+  const pathCount = 120;
+  const dt = 1 / tradingDays;
+  const startingPrice = activeAsset.prices.at(-1).price;
+  const normal = makeNormalGenerator(
+    activeAsset.seed + estimationWindow * 31 + forecastHorizon
+  );
+  const paths = Array.from({length: pathCount}, () => startingPrice);
+  const summary = [{day: 0, lower: startingPrice, median: startingPrice, upper: startingPrice}];
+
+  for (let day = 1; day <= forecastHorizon; day++) {
+    for (let path = 0; path < pathCount; path++) {
+      paths[path] *= Math.exp(
+        (fitDrift - 0.5 * fitVolatility ** 2) * dt
+        + fitVolatility * Math.sqrt(dt) * normal()
+      );
+    }
+    summary.push({
+      day,
+      lower: quantile(paths, 0.05),
+      median: quantile(paths, 0.5),
+      upper: quantile(paths, 0.95)
+    });
+  }
+  return summary;
+})()
+```

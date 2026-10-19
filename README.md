@@ -50,6 +50,13 @@ rendered report, dashboard, slides, and executed notebook. Render individual
 deliverables with `quarto render notebooks/market_walkthrough.ipynb --execute`,
 `quarto render dashboard.qmd`, or `quarto render slides.qmd`.
 
+The dashboard uses Observable JavaScript inputs, so the selected synthetic
+asset, calibration lookback, volatility, and forecast update directly in the
+browser. Python creates the report and presentation at render time; GitHub
+Pages serves their generated static files. No live Python server is required
+for these controls. By contrast, server-backed Shiny controls would need a
+separate hosting service.
+
 ## Work in VS Code
 
 1. Install the [Quarto VS Code extension](https://marketplace.visualstudio.com/items?itemName=quarto.quarto).
@@ -62,7 +69,11 @@ deliverables with `quarto render notebooks/market_walkthrough.ipynb --execute`,
    Palette and run **Quarto: Preview**. Edit a sentence or parameter, save,
    and preview again to see the report update.
 4. Repeat with `dashboard.qmd` and `slides.qmd` to explore the other Quarto
-   formats. The rendered website entry point is `_site/index.html`.
+   formats. The slides have edge arrows and also respond to the left/right
+   arrow keys. The rendered notebook has its own HTML theme in
+   `notebooks/_metadata.yml`; this affects Quarto's notebook output, not VS
+   Code's notebook editor theme. The rendered website entry point is
+   `_site/index.html`.
 
 To produce an editable PowerPoint instead of the browser-based Reveal.js
 presentation, use Quarto's PowerPoint output:
