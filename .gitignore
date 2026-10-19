@@ -9,5 +9,4 @@ __pycache__/
 *.py[cod]
 .ipynb_checkpoints/
 
-/.quarto/
 **/*.quarto_ipynb

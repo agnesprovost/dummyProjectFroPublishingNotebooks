@@ -1,82 +1,135 @@
 ---
-title: "A toy GBM workflow"
-subtitle: "From synthetic returns to simulated paths"
+title: "From toy prices to a volatility model"
+subtitle: "A short, reproducible GBM walkthrough"
 format:
   revealjs:
-    slide-number: true
-    theme: simple
+    theme:
+      - white
+      - styles/slides.scss
+    slide-number: "c/t"
+    show-slide-number: all
+    controls: true
+    controls-layout: edges
+    controls-tutorial: true
+    controls-back-arrows: visible
+    progress: true
+    navigation-mode: linear
+    transition: slide
+    background-transition: fade
+    hash: true
+    center: false
+    width: 1280
+    height: 720
+    margin: 0.08
 ---
 
-## The question
+## The workflow
 
-How can a short, reproducible Python analysis become a shareable web report?
+::: {.columns}
 
-- Make a deterministic toy price history.
-- Estimate parameters from its returns.
-- Simulate and compare paths.
-- Render the same story with Quarto.
+::: {.column width="48%"}
 
-## The data
+### Start with prices
+
+Generate two five-year synthetic histories with different volatility.
+
+### Calibrate
+
+Estimate annualized drift and volatility from the last year of returns.
+
+### Simulate
+
+Use those estimates to draw forward scenarios.
+
+:::
+
+::: {.column width="52%"}
+
+The same Python functions drive the report and notebook. The dashboard adds
+browser-side controls so you can change the asset and lookback window.
+
+**Use the arrows at the screen edges or the left/right keys to move through
+the slides.**
+
+:::
+
+:::
+
+## Two toy histories
 
 ```{python}
 import sys
 sys.path.insert(0, "src")
 
 import matplotlib.pyplot as plt
-from market_demo import generate_prices, log_returns, estimate_parameters, simulate_gbm
+from market_demo import generate_prices
 
-prices = generate_prices()
-returns = log_returns(prices)
-fig, ax = plt.subplots(figsize=(8, 4))
-ax.plot(prices.index, prices, color="#2878B5")
-ax.set(title="Five years of synthetic daily prices", xlabel="Date", ylabel="Price")
-ax.grid(alpha=0.25)
+steady = generate_prices(drift=0.07, volatility=0.18, seed=42)
+volatile = generate_prices(drift=0.04, volatility=0.34, seed=2026)
+
+fig, ax = plt.subplots(figsize=(9, 4.8))
+ax.plot(steady.index, steady, color="#087f8c", linewidth=1.8, label="Steady")
+ax.plot(volatile.index, volatile, color="#e76f51", linewidth=1.5, label="Volatile")
+ax.set(title="Two seeded GBM price histories", xlabel="Date", ylabel="Synthetic price")
+ax.legend(frameon=False, ncol=2)
+ax.grid(alpha=0.2)
 fig.tight_layout()
 plt.show()
 ```
 
-## The calibration
+## Estimate from a window
 
 ```{python}
-estimates = estimate_parameters(returns)
-print(f"Observations: {len(returns):,}")
-print(f"Annualized drift: {estimates['drift']:.1%}")
-print(f"Annualized volatility: {estimates['volatility']:.1%}")
+from market_demo import estimate_parameters, log_returns
+
+steady_returns = log_returns(steady)
+volatile_returns = log_returns(volatile)
+lookback = 252
+steady_fit = estimate_parameters(steady_returns.tail(lookback))
+volatile_fit = estimate_parameters(volatile_returns.tail(lookback))
+
+print(f"Steady series:   {steady_fit['volatility']:.1%} annualized volatility")
+print(f"Volatile series: {volatile_fit['volatility']:.1%} annualized volatility")
 ```
 
-Daily log-return volatility is annualized with \(\sqrt{252}\).
+The dashboard lets you change that lookback from 60 to 1,260 trading days.
+Short windows respond faster to recent moves; long windows smooth them out.
 
-## The comparison
+## Simulate forward
 
 ```{python}
+from market_demo import simulate_gbm
+
+forecast_days = 252
 paths = simulate_gbm(
-    initial_price=float(prices.iloc[0]),
-    n_days=len(returns),
-    drift=estimates["drift"],
-    volatility=estimates["volatility"],
+    initial_price=float(steady.iloc[-1]),
+    n_days=forecast_days,
+    drift=steady_fit["drift"],
+    volatility=steady_fit["volatility"],
 )
-fig, ax = plt.subplots(figsize=(8, 4))
-ax.plot(range(len(prices)), prices.to_numpy(), color="#2878B5", label="Synthetic history")
-ax.plot(paths.index, paths.median(axis=1), color="#E15759", label="Simulated median")
+
+fig, ax = plt.subplots(figsize=(9, 4.8))
+ax.plot(paths.index, paths.median(axis=1), color="#087f8c", linewidth=2, label="Median")
 ax.fill_between(
     paths.index,
     paths.quantile(0.05, axis=1),
     paths.quantile(0.95, axis=1),
-    color="#F28E2B",
-    alpha=0.2,
-    label="Simulated 5th–95th percentile",
+    color="#f4a261",
+    alpha=0.28,
+    label="5th–95th percentile",
 )
-ax.set(title="One path versus calibrated simulations", xlabel="Trading day", ylabel="Price")
+ax.set(title="One-year GBM scenarios, calibrated on the steady series",
+       xlabel="Trading days from today", ylabel="Synthetic price")
 ax.legend(frameon=False)
-ax.grid(alpha=0.25)
+ax.grid(alpha=0.2)
 fig.tight_layout()
 plt.show()
 ```
 
-## What Quarto adds
+## What to remember
 
-- One source format can produce a website, a dashboard, and slides.
-- Code and results stay together and are re-executed on render.
-- The same analysis functions can also be imported by a Jupyter notebook.
+- Log-return standard deviation scales by `sqrt(252)` to annualize volatility.
+- The calibration window and chosen series change the estimated parameters.
+- GBM is a useful teaching model, not a realistic guarantee about future returns.
 
-This is a teaching example with synthetic data, not an investment model.
+**Try the live controls:** open the dashboard and vary the asset and window.

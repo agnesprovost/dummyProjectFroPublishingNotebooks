@@ -1,0 +1,21 @@
+.observablehq svg {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+}
+
+.observablehq {
+  min-width: 0;
+}
+
+.dashboard .observablehq h3 {
+  margin: 0.15rem 0 0;
+  font-size: 1.3rem;
+}
+
+.dashboard .observablehq p {
+  margin-bottom: 0.2rem;
+  font-size: 0.82rem;
+  line-height: 1.15;
+}
