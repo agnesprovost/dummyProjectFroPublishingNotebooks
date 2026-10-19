@@ -4,9 +4,7 @@ title: "From prices to simulated paths"
 
 ## 1. Generate a toy price history
 
-This report uses a five-year synthetic series generated with a known GBM
-process. It is intentionally simple and deterministic, so rendering the
-document produces the same example each time.
+This report uses a five-year synthetic series generated with a known GBM process. It is intentionally simple and deterministic, so rendering the document produces the same example each time.
 
 ```{python}
 import sys
@@ -37,12 +35,7 @@ This is one random realization, not a claim about how a real asset behaves.
 
 ## 2. Calculate and inspect log returns
 
-For consecutive prices \(P_t\), the continuously compounded return is
-\[
-r_t = \log(P_t) - \log(P_{t-1}).
-\]
-Log returns are additive over time and are a convenient input for this
-illustrative GBM calibration.
+For consecutive prices (P_t), the continuously compounded return is \[ r_t = \log(P_t) - \log(P\_{t-1}). \] Log returns are additive over time and are a convenient input for this illustrative GBM calibration.
 
 ```{python}
 fig, axes = plt.subplots(1, 2, figsize=(11, 4))
@@ -57,15 +50,11 @@ fig.tight_layout()
 plt.show()
 ```
 
-The histogram is descriptive, not a formal goodness-of-fit test. A real
-financial return series may have heavier tails, volatility clustering, and
-other features this toy model does not represent.
+The histogram is descriptive, not a formal goodness-of-fit test. A real financial return series may have heavier tails, volatility clustering, and other features this toy model does not represent.
 
 ## 3. Calibrate annualized parameters
 
-The sample standard deviation of daily log returns is scaled by
-\(\sqrt{252}\). The drift estimate converts the average daily log return to an
-annualized GBM drift by adding half the estimated annual variance.
+The sample standard deviation of daily log returns is scaled by (\sqrt{252}). The drift estimate converts the average daily log return to an annualized GBM drift by adding half the estimated annual variance.
 
 ```{python}
 estimates = estimate_parameters(returns)
@@ -75,9 +64,7 @@ print(f"Estimated annualized volatility: {estimates['volatility']:.1%}")
 
 ## 4. Simulate and compare
 
-Use those estimates to simulate paths over the same number of trading days.
-The median and 5th–95th percentile band summarize the simulated paths; they
-are not a confidence interval for a real asset.
+Use those estimates to simulate paths over the same number of trading days. The median and 5th–95th percentile band summarize the simulated paths; they are not a confidence interval for a real asset.
 
 ```{python}
 paths = simulate_gbm(
@@ -103,7 +90,4 @@ plt.show()
 
 ## Takeaway
 
-This is the simplest useful workflow, not a production model: a seeded
-synthetic dataset, a transparent estimator, a simulation, and plots that
-explain each step. The Python functions live in `src/market_demo.py`, so the
-same calculations can be reused in a notebook, report, or another tool.
+This is the simplest useful workflow, not a production model: a seeded synthetic dataset, a transparent estimator, a simulation, and plots that explain each step. The Python functions live in `src/market_demo.py`, so the same calculations can be reused in a notebook, report, or another tool.
